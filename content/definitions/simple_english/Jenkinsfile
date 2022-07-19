@@ -1,3 +1,16 @@
+def get_latest_wiktionary_dump(rss_url) {
+    def filename = (rss_url =~ /.*\/([^\/]*)/)[ 0 ][ 1 ]
+
+    sh "wget $rss_url"
+    def xml = sh script: "cat $filename", returnStdout: true
+
+    def parsed = new XmlSlurper().parseText(xml)
+    def link = parsed.channel.item.description.text()
+    def url = (link =~ /<a href="(.*)">.*<\/a>/)[ 0 ][ 1 ]
+
+    return url
+}
+
 podTemplate(
     containers: [
         containerTemplate(name: 'kubernetes', image: 'alpine/k8s:1.21.13', command: 'sleep', args: '99d'),
@@ -8,21 +21,24 @@ podTemplate(
     serviceAccount: 'jenkins-spark-job'
 ) {
     node(POD_LABEL) {
-        stage('Trigger job') {
-            git branch: 'main', url: 'https://github.com/fluent-labs/jobs.git'
-            container('sbt') {
-                stage('Build Spark jar') {
-                    sh '''
-                        sbt assembly
-                        pwd
-                        ls -la
-                    '''
-                }
+        container('sbt') {
+            stage("Identify latest wiktionary backup") {
+                def latest_url = get_latest_wiktionary_dump('https://dumps.wikimedia.org/simplewiktionary/latest/simplewiktionary-latest-pages-meta-current.xml.bz2-rss.xml')
+                echo latest_url
             }
-            container('kubernetes') {
-                stage('Submit job to Spark') {
-                    withKubeConfig([credentialsId: 'jenkins-operator-token', namespace: 'content']) {
-                        sh '''
+            stage('Build Spark jar') {
+                git branch: 'main', url: 'https://github.com/fluent-labs/jobs.git'
+                sh '''
+                    sbt assembly
+                    pwd
+                    ls -la
+                '''
+            }
+        }
+        container('kubernetes') {
+            stage('Submit job to Spark') {
+                withKubeConfig([credentialsId: 'jenkins-operator-token', namespace: 'content']) {
+                    sh '''
 cat <<EOF | kubectl apply -f -
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
@@ -53,8 +69,7 @@ spec:
             version: 3.0.0
         serviceAccount: spark-spark
 EOF
-                        '''
-                    }
+                    '''
                 }
             }
         }
