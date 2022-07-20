@@ -1,0 +1,66 @@
+import groovy.json.JsonSlurper
+
+def get_latest_wiktionary_version(dictionary) {
+    def rss_url = "https://dumps.wikimedia.org/$dictionary/latest/$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
+    def filename = "$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
+
+    sh "wget $rss_url"
+    def xml = sh script: "cat $filename", returnStdout: true
+
+    def parsed = new XmlSlurper().parseText(xml)
+    def link = parsed.channel.link.text()
+    
+    return (link =~ /.*\/([0-9]+)/)[ 0 ][ 1 ]
+}
+
+def get_hash_for_version(dictionary, version) {
+    sh "wget https://dumps.wikimedia.org/$dictionary/$version/dumpstatus.json"
+    def json = sh script: "cat dumpstatus.json", returnStdout: true
+
+    def parsed = new JsonSlurper().parseText(json)
+    return parsed.jobs.metacurrentdump.files.get("$dictionary-$version-pages-meta-current.xml.bz2").sha1
+}
+
+def get_wiktionary_dump(dictionary, version) {
+    def dump_url = "http://download.wikimedia.org/$dictionary/$version/$dictionary-$version-pages-meta-current.xml.bz2"
+    def archive_filename = "$dictionary-$version-pages-meta-current.xml.bz2"
+    def hash = get_hash_for_version(dictionary, version)
+    
+    // TODO re-enable hash checking
+    // echo "$hash $archive_filename" | sha1sum -c -
+
+    sh """
+    wget $dump_url
+    echo `sha1sum $archive_filename`
+    bzip2 -d $archive_filename
+    """
+
+    return "dictionary-$version-pages-meta-current.xml"
+}
+
+podTemplate(
+    containers: [
+        containerTemplate(
+            name: 'sbt',
+            image: 'lkjaero/spark-runner:latest',
+            command: 'sleep',
+            args: '99d',
+            envVars: [
+                secretEnvVar(key: "SPACES_ACCESS_KEY_ID", secretName: "do-spaces-access-key", secretKey: "username"),
+                secretEnvVar(key: "SPACES_SECRET_ACCESS_KEY", secretName: "do-spaces-access-key", secretKey: "password"),
+            ]
+        )
+    ],
+    imagePullSecrets: ['dockerhub'],
+) {
+    node(POD_LABEL) {
+        container("sbt") {
+            stage('Download latest backup') {
+                def latest_version = get_latest_wiktionary_version('simplewiktionary')
+                echo latest_version
+                def dump_file = get_wiktionary_dump('simplewiktionary', latest_version)
+                echo dump_file
+            }
+        }
+    }
+}
