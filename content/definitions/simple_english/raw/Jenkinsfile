@@ -33,16 +33,17 @@ def get_wiktionary_dump(dictionary, version) {
     wget $dump_url
     echo `sha1sum $archive_filename`
     bzip2 -d $archive_filename
+    rm $archive_filename
     """
 
-    return "dictionary-$version-pages-meta-current.xml"
+    return "$dictionary-$version-pages-meta-current.xml"
 }
 
 podTemplate(
     containers: [
         containerTemplate(
-            name: 'sbt',
-            image: 'lkjaero/spark-runner:latest',
+            name: 's3',
+            image: 'lkjaero/jenkins-runners:s3',
             command: 'sleep',
             args: '99d',
             envVars: [
@@ -54,7 +55,12 @@ podTemplate(
     imagePullSecrets: ['dockerhub'],
 ) {
     node(POD_LABEL) {
-        container("sbt") {
+        container("s3") {
+            stage('Install storage client') {
+                sh '''
+                    s3cmd --host fra1.digitaloceanspaces.com --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' -s --no-encrypt --dump-config 2>&1 | tee .s3cfg
+                '''
+            }
             stage('Download latest backup') {
                 def latest_version = get_latest_wiktionary_version('simplewiktionary')
                 echo latest_version
