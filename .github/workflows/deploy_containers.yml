@@ -3,6 +3,7 @@ on:
   pull_request:
     types: [closed]
 
+jobs:
   s3-container:
     name: Make a container with an s3 client
     runs-on: ubuntu-latest

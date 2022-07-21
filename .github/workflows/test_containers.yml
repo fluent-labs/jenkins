@@ -1,7 +1,7 @@
 name: Test jenkins worker containers
-on:
-  on: [pull_request]
+on: [pull_request]
 
+jobs:
   s3-container:
     name: Make a container with an s3 client
     runs-on: ubuntu-latest
@@ -16,4 +16,4 @@ on:
 
     - name: Build container
       run: |
-        docker build . -t lkjaero/jenkins-runners:s3
+        docker build -f Dockerfile_s3 . -t lkjaero/jenkins-runners:s3
