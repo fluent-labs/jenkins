@@ -1,5 +1,8 @@
 import groovy.json.JsonSlurper
 
+def out_of_date = true
+def dictionary = 'simplewiktionary'
+
 def get_latest_wiktionary_version(dictionary) {
     def rss_url = "https://dumps.wikimedia.org/$dictionary/latest/$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
     def filename = "$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
@@ -10,7 +13,7 @@ def get_latest_wiktionary_version(dictionary) {
     def parsed = new XmlSlurper().parseText(xml)
     def link = parsed.channel.link.text()
     
-    return (link =~ /.*\/([0-9]+)/)[ 0 ][ 1 ]
+    return (link =~ /.*\/([0-9]+)/)[ 0 ][ 1 ].toString().trim()
 }
 
 def get_hash_for_version(dictionary, version) {
@@ -33,10 +36,31 @@ def get_wiktionary_dump(dictionary, version) {
     wget $dump_url
     echo `sha1sum $archive_filename`
     bzip2 -d $archive_filename
+    ls -la
     """
     //rm $archive_filename
 
     return "$dictionary-$version-pages-meta-current.xml"
+}
+
+def get_latest_processed_version(dictionary) {
+    try {
+        sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' get s3://definitions/$dictionary/latest_version.txt"
+        def latest_version = sh script: "cat latest_version.txt", returnStdout: true
+        sh "rm latest_version.txt"
+        return latest_version.toString().trim()
+    } catch (Exception e) {
+        echo "Couldn't get latest processed version. Is this the first time you're running this?"
+        echo 'Exception occurred: ' + e.toString()
+        return null
+    }
+}
+
+def put_latest_processed_version(dictionary, latest_version) {
+    sh """
+    echo $latest_version > latest_processed_version.txt
+    s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put latest_processed_version.txt s3://definitions/$dictionary/latest_version.txt
+    """
 }
 
 podTemplate(
@@ -58,20 +82,25 @@ podTemplate(
 ) {
     node(POD_LABEL) {
         container("s3") {
-            // stage('Configure storage client') {
-            //     sh '''
-            //         s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' ls
-            //     '''
-            // }
-            stage('Download latest backup') {
-                def dictionary = 'simplewiktionary'
-                
+            stage('Check if backup is up to date') {
                 def latest_version = get_latest_wiktionary_version(dictionary)
-                echo latest_version
-                def dump_file = get_wiktionary_dump(dictionary, latest_version)
-                echo dump_file
+                echo "Latest $dictionary version: $latest_version"
                 
-                sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put $dump_file s3://definitions/raw/$dictionary/$latest_version/$dump_file"
+                def latest_processed_version = get_latest_processed_version(dictionary)
+                echo "Latest processed $dictionary version: $latest_processed_version"
+                
+                if (latest_version == latest_processed_version) {
+                    echo "$dictionary is already up to date."
+                } else {
+                    echo "Fetching newer $dictionary version $latest_version."
+                    
+                    def dump_file = get_wiktionary_dump(dictionary, latest_version)
+                    echo dump_file
+                    
+                    sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put $dump_file s3://definitions/$dictionary/$latest_version/raw/$dump_file"
+                
+                    put_latest_processed_version(dictionary, latest_version)
+                }
             }
         }
     }
