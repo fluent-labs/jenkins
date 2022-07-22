@@ -21,24 +21,27 @@ def get_hash_for_version(dictionary, version) {
     def json = sh script: "cat dumpstatus.json", returnStdout: true
 
     def parsed = new JsonSlurper().parseText(json)
-    return parsed.jobs.metacurrentdump.files.get("$dictionary-$version-pages-meta-current.xml.bz2").sha1
+    return parsed.jobs.metacurrentdump.files.get("$dictionary-$version-pages-meta-current.xml.bz2").sha1.toString().trim()
 }
 
 def get_wiktionary_dump(dictionary, version) {
     def dump_url = "http://download.wikimedia.org/$dictionary/$version/$dictionary-$version-pages-meta-current.xml.bz2"
     def archive_filename = "$dictionary-$version-pages-meta-current.xml.bz2"
-    def hash = get_hash_for_version(dictionary, version)
     
-    // TODO re-enable hash checking
-    // echo "$hash $archive_filename" | sha1sum -c -
-
-    sh """
-    wget $dump_url
-    echo `sha1sum $archive_filename`
-    bzip2 -d $archive_filename
-    ls -la
-    """
-    //rm $archive_filename
+    // Download the archive
+    sh "wget $dump_url"
+    
+    // Check the hash
+    def expected_hash = get_hash_for_version(dictionary, version)
+    def actual_hash = sh script: "sha1sum $archive_filename", returnStdout: true
+    actual_hash = (actual_hash =~ /([^ ]+) .*/)[ 0 ][ 1 ].toString().trim()
+    echo "Expected: $expected_hash, actual: $actual_hash"
+    if (actual_hash != expected_hash) {
+        throw new IllegalStateException("Download hash did not match, expected: $expected_hash, actual: $actual_hash")
+    }
+    
+    // Unzip it
+    sh "bzip2 -d $archive_filename"
 
     return "$dictionary-$version-pages-meta-current.xml"
 }
