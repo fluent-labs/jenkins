@@ -1,7 +1,8 @@
 import groovy.json.JsonSlurper
 
-def out_of_date = true
 def dictionary = 'simplewiktionary'
+def latest_wiktionary_version = null
+def latest_downloaded_version = null
 
 def get_latest_wiktionary_version(dictionary) {
   def rss_url = "https://dumps.wikimedia.org/$dictionary/latest/$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
@@ -72,52 +73,58 @@ pipeline {
       yaml '''
         apiVersion: v1
         kind: Pod
+        metadata:
+          namespace: content
         spec:
           imagePullSecrets:
           - 'dockerhub'
           containers:
           - name: s3
             image: lkjaero/jenkins-runners:s3
-            alwaysPullImage: true
+            imagePullPolicy: Always
             command:
             - sleep
             args:
             - 99d
-            envVars:
-            - secretEnvVar:
-              key: "AWS_ACCESS_KEY_ID"
-              secretName: "do-spaces-access-key"
-              secretKey: "username"
-            - secretEnvVar:
-              key: "AWS_SECRET_ACCESS_KEY"
-              secretName: "do-spaces-access-key"
-              secretKey: "password"
+            env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: do-spaces-access-key
+                  key: username
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: do-spaces-access-key
+                  key: password
         '''
     }
   }
   stages {
-    stage('Run maven') {
+    stage("Check download") {
       steps {
         container('s3') {
           script {
-            def latest_version = get_latest_wiktionary_version(dictionary)
-            echo "Latest $dictionary version: $latest_version"
+            latest_wiktionary_version = get_latest_wiktionary_version(dictionary)
+            latest_downloaded_version = get_latest_processed_version(dictionary)
+
+            echo "Latest $dictionary version: $latest_wiktionary_version"
+            echo "Latest processed $dictionary version: $latest_downloaded_version"
+          }
+        }
+      }
+    }
+    stage("Download latest") {
+      when { not { equals expected: latest_wiktionary_version, actual: latest_downloaded_version } }
+      steps {
+        container('s3') {
+          script {
+            echo "Fetching newer $dictionary version $latest_wiktionary_version."
+            def dump_file = get_wiktionary_dump(dictionary, latest_wiktionary_version)
             
-            def latest_processed_version = get_latest_processed_version(dictionary)
-            echo "Latest processed $dictionary version: $latest_processed_version"
-            
-            if (latest_version == latest_processed_version) {
-              echo "$dictionary is already up to date."
-            } else {
-              echo "Fetching newer $dictionary version $latest_version."
-              
-              def dump_file = get_wiktionary_dump(dictionary, latest_version)
-              echo dump_file
-              
-              sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put $dump_file s3://definitions/$dictionary/$latest_version/raw/$dump_file"
-          
-              put_latest_processed_version(dictionary, latest_version)
-            }
+            sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put $dump_file s3://definitions/$dictionary/$latest_version/raw/$dump_file"
+        
+            put_latest_processed_version(dictionary, latest_wiktionary_version)
           }
         }
       }
