@@ -2,6 +2,8 @@ name: Build jenkins worker containers
 on:
   pull_request:
     types: [closed]
+  schedule:
+    - cron:  '0 9 * * *'
 
 jobs:
   s3-container:
