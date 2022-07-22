@@ -4,107 +4,123 @@ def out_of_date = true
 def dictionary = 'simplewiktionary'
 
 def get_latest_wiktionary_version(dictionary) {
-    def rss_url = "https://dumps.wikimedia.org/$dictionary/latest/$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
-    def filename = "$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
+  def rss_url = "https://dumps.wikimedia.org/$dictionary/latest/$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
+  def filename = "$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
 
-    sh "wget $rss_url"
-    def xml = sh script: "cat $filename", returnStdout: true
+  sh "wget $rss_url"
+  def xml = sh script: "cat $filename", returnStdout: true
 
-    def parsed = new XmlSlurper().parseText(xml)
-    def link = parsed.channel.link.text()
-    
-    return (link =~ /.*\/([0-9]+)/)[ 0 ][ 1 ].toString().trim()
+  def parsed = new XmlSlurper().parseText(xml)
+  def link = parsed.channel.link.text()
+  
+  return (link =~ /.*\/([0-9]+)/)[ 0 ][ 1 ].toString().trim()
 }
 
 def get_hash_for_version(dictionary, version) {
-    sh "wget https://dumps.wikimedia.org/$dictionary/$version/dumpstatus.json"
-    def json = sh script: "cat dumpstatus.json", returnStdout: true
+  sh "wget https://dumps.wikimedia.org/$dictionary/$version/dumpstatus.json"
+  def json = sh script: "cat dumpstatus.json", returnStdout: true
 
-    def parsed = new JsonSlurper().parseText(json)
-    return parsed.jobs.metacurrentdump.files.get("$dictionary-$version-pages-meta-current.xml.bz2").sha1.toString().trim()
+  def parsed = new JsonSlurper().parseText(json)
+  return parsed.jobs.metacurrentdump.files.get("$dictionary-$version-pages-meta-current.xml.bz2").sha1.toString().trim()
 }
 
 def get_wiktionary_dump(dictionary, version) {
-    def dump_url = "http://download.wikimedia.org/$dictionary/$version/$dictionary-$version-pages-meta-current.xml.bz2"
-    def archive_filename = "$dictionary-$version-pages-meta-current.xml.bz2"
-    
-    // Download the archive
-    sh "wget $dump_url"
-    
-    // Check the hash
-    def expected_hash = get_hash_for_version(dictionary, version)
-    def actual_hash = sh script: "sha1sum $archive_filename", returnStdout: true
-    actual_hash = (actual_hash =~ /([^ ]+) .*/)[ 0 ][ 1 ].toString().trim()
-    echo "Expected: $expected_hash, actual: $actual_hash"
-    if (actual_hash != expected_hash) {
-        throw new IllegalStateException("Download hash did not match, expected: $expected_hash, actual: $actual_hash")
-    }
-    
-    // Unzip it
-    sh "bzip2 -d $archive_filename"
+  def dump_url = "http://download.wikimedia.org/$dictionary/$version/$dictionary-$version-pages-meta-current.xml.bz2"
+  def archive_filename = "$dictionary-$version-pages-meta-current.xml.bz2"
+  
+  // Download the archive
+  sh "wget $dump_url"
+  
+  // Check the hash
+  def expected_hash = get_hash_for_version(dictionary, version)
+  def actual_hash = sh script: "sha1sum $archive_filename", returnStdout: true
+  actual_hash = (actual_hash =~ /([^ ]+) .*/)[ 0 ][ 1 ].toString().trim()
+  echo "Expected: $expected_hash, actual: $actual_hash"
+  if (actual_hash != expected_hash) {
+    throw new IllegalStateException("Download hash did not match, expected: $expected_hash, actual: $actual_hash")
+  }
+  
+  // Unzip it
+  sh "bzip2 -d $archive_filename"
 
-    return "$dictionary-$version-pages-meta-current.xml"
+  return "$dictionary-$version-pages-meta-current.xml"
 }
 
 def get_latest_processed_version(dictionary) {
-    try {
-        sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' get s3://definitions/$dictionary/latest_version.txt"
-        def latest_version = sh script: "cat latest_version.txt", returnStdout: true
-        sh "rm latest_version.txt"
-        return latest_version.toString().trim()
-    } catch (Exception e) {
-        echo "Couldn't get latest processed version. Is this the first time you're running this?"
-        echo 'Exception occurred: ' + e.toString()
-        return null
-    }
+  try {
+    sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' get s3://definitions/$dictionary/latest_version.txt"
+    def latest_version = sh script: "cat latest_version.txt", returnStdout: true
+    sh "rm latest_version.txt"
+    return latest_version.toString().trim()
+  } catch (Exception e) {
+    echo "Couldn't get latest processed version. Is this the first time you're running this?"
+    echo 'Exception occurred: ' + e.toString()
+    return null
+  }
 }
 
 def put_latest_processed_version(dictionary, latest_version) {
-    sh """
-    echo $latest_version > latest_processed_version.txt
-    s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put latest_processed_version.txt s3://definitions/$dictionary/latest_version.txt
-    """
+  sh """
+  echo $latest_version > latest_processed_version.txt
+  s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put latest_processed_version.txt s3://definitions/$dictionary/latest_version.txt
+  """
 }
 
-podTemplate(
-    containers: [
-        containerTemplate(
-            name: 's3',
-            image: 'lkjaero/jenkins-runners:s3',
-            command: 'sleep',
-            args: '99d',
-            envVars: [
-                secretEnvVar(key: "AWS_ACCESS_KEY_ID", secretName: "do-spaces-access-key", secretKey: "username"),
-                secretEnvVar(key: "AWS_SECRET_ACCESS_KEY", secretName: "do-spaces-access-key", secretKey: "password"),
-            ],
-            // Needed because we re-use tags for the runners
-            alwaysPullImage: true,
-        )
-    ],
-    imagePullSecrets: ['dockerhub'],
-) {
-    node(POD_LABEL) {
-        container("s3") {
-            stage('Check if backup is up to date') {
-                def latest_version = get_latest_wiktionary_version(dictionary)
-                echo "Latest $dictionary version: $latest_version"
-                
-                def latest_processed_version = get_latest_processed_version(dictionary)
-                echo "Latest processed $dictionary version: $latest_processed_version"
-                
-                if (latest_version == latest_processed_version) {
-                    echo "$dictionary is already up to date."
-                } else {
-                    echo "Fetching newer $dictionary version $latest_version."
-                    
-                    def dump_file = get_wiktionary_dump(dictionary, latest_version)
-                    echo dump_file
-                    
-                    sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put $dump_file s3://definitions/$dictionary/$latest_version/raw/$dump_file"
-                
-                    put_latest_processed_version(dictionary, latest_version)
-                }
-            }
-        }
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          imagePullSecrets:
+          - 'dockerhub'
+          containers:
+          - name: s3
+            image: lkjaero/jenkins-runners:s3
+            alwaysPullImage: true
+            command:
+            - sleep
+            args:
+            - 99d
+            envVars:
+            - secretEnvVar:
+              key: "AWS_ACCESS_KEY_ID"
+              secretName: "do-spaces-access-key"
+              secretKey: "username"
+            - secretEnvVar:
+              key: "AWS_SECRET_ACCESS_KEY"
+              secretName: "do-spaces-access-key"
+              secretKey: "password"
+        '''
     }
+  }
+  stages {
+    stage('Run maven') {
+      steps {
+        container('s3') {
+          script {
+            def latest_version = get_latest_wiktionary_version(dictionary)
+            echo "Latest $dictionary version: $latest_version"
+            
+            def latest_processed_version = get_latest_processed_version(dictionary)
+            echo "Latest processed $dictionary version: $latest_processed_version"
+            
+            if (latest_version == latest_processed_version) {
+              echo "$dictionary is already up to date."
+            } else {
+              echo "Fetching newer $dictionary version $latest_version."
+              
+              def dump_file = get_wiktionary_dump(dictionary, latest_version)
+              echo dump_file
+              
+              sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put $dump_file s3://definitions/$dictionary/$latest_version/raw/$dump_file"
+          
+              put_latest_processed_version(dictionary, latest_version)
+            }
+          }
+        }
+      }
+    }
+  }
 }
