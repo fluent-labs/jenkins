@@ -1,4 +1,4 @@
-def call(String: dictionary) {
+def call(String dictionary) {
   def rss_url = "https://dumps.wikimedia.org/$dictionary/latest/$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
   def filename = "$dictionary-latest-pages-meta-current.xml.bz2-rss.xml"
 
