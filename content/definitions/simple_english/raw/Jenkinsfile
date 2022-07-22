@@ -33,8 +33,8 @@ def get_wiktionary_dump(dictionary, version) {
     wget $dump_url
     echo `sha1sum $archive_filename`
     bzip2 -d $archive_filename
-    rm $archive_filename
     """
+    //rm $archive_filename
 
     return "$dictionary-$version-pages-meta-current.xml"
 }
@@ -47,25 +47,31 @@ podTemplate(
             command: 'sleep',
             args: '99d',
             envVars: [
-                secretEnvVar(key: "SPACES_ACCESS_KEY_ID", secretName: "do-spaces-access-key", secretKey: "username"),
-                secretEnvVar(key: "SPACES_SECRET_ACCESS_KEY", secretName: "do-spaces-access-key", secretKey: "password"),
-            ]
+                secretEnvVar(key: "AWS_ACCESS_KEY_ID", secretName: "do-spaces-access-key", secretKey: "username"),
+                secretEnvVar(key: "AWS_SECRET_ACCESS_KEY", secretName: "do-spaces-access-key", secretKey: "password"),
+            ],
+            // Needed because we re-use tags for the runners
+            alwaysPullImage: true,
         )
     ],
     imagePullSecrets: ['dockerhub'],
 ) {
     node(POD_LABEL) {
         container("s3") {
-            stage('Install storage client') {
-                sh '''
-                    s3cmd --host fra1.digitaloceanspaces.com --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' -s --no-encrypt --dump-config 2>&1 | tee .s3cfg
-                '''
-            }
+            // stage('Configure storage client') {
+            //     sh '''
+            //         s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' ls
+            //     '''
+            // }
             stage('Download latest backup') {
-                def latest_version = get_latest_wiktionary_version('simplewiktionary')
+                def dictionary = 'simplewiktionary'
+                
+                def latest_version = get_latest_wiktionary_version(dictionary)
                 echo latest_version
-                def dump_file = get_wiktionary_dump('simplewiktionary', latest_version)
+                def dump_file = get_wiktionary_dump(dictionary, latest_version)
                 echo dump_file
+                
+                sh "s3cmd --host 'fra1.digitaloceanspaces.com' --host-bucket '%(bucket)s.fra1.digitaloceanspaces.com' put $dump_file s3://definitions/raw/$dictionary/$latest_version/$dump_file"
             }
         }
     }
