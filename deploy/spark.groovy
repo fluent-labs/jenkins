@@ -12,7 +12,6 @@ pipeline {
           containers:
           - name: spark
             image: lkjaero/jenkins-runners:spark
-            imagePullPolicy: Always
             command:
             - sleep
             args:
