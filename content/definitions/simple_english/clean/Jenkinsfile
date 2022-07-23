@@ -1,16 +1,3 @@
-def get_latest_wiktionary_dump(rss_url) {
-    def filename = (rss_url =~ /.*\/([^\/]*)/)[ 0 ][ 1 ]
-
-    sh "wget $rss_url"
-    def xml = sh script: "cat $filename", returnStdout: true
-
-    def parsed = new XmlSlurper().parseText(xml)
-    def link = parsed.channel.item.description.text()
-    def url = (link =~ /<a href="(.*)">.*<\/a>/)[ 0 ][ 1 ]
-
-    return url
-}
-
 podTemplate(
     containers: [
         containerTemplate(name: 'kubernetes', image: 'alpine/k8s:1.21.13', command: 'sleep', args: '99d'),
