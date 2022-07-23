@@ -50,7 +50,7 @@ pipeline {
     stage("Build the jar") {
       steps {
         container('sbt') {
-          git branch: 'master', url: 'https://github.com/fluent-labs/jobs.git'
+          git branch: 'main', url: 'https://github.com/fluent-labs/jobs.git'
           sh 'sbt assembly'
         }
       }
