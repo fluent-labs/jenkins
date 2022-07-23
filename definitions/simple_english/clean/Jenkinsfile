@@ -9,10 +9,6 @@ podTemplate(
 ) {
     node(POD_LABEL) {
         container('sbt') {
-            stage("Identify latest wiktionary backup") {
-                def latest_url = get_latest_wiktionary_dump('https://dumps.wikimedia.org/simplewiktionary/latest/simplewiktionary-latest-pages-meta-current.xml.bz2-rss.xml')
-                echo latest_url
-            }
             stage('Build Spark jar') {
                 git branch: 'main', url: 'https://github.com/fluent-labs/jobs.git'
                 sh '''
