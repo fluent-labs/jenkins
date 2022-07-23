@@ -28,9 +28,17 @@ pipeline {
                 secretKeyRef:
                   name: do-spaces-access-key
                   key: password
+            volumes:
+            - name: sbt-cache
+              persistentVolumeClaim:
+                claimName: sbt-cache
+            volumeMounts:
+            - name: sbt-cache
+              mountPath: /root/.cache/coursier/v1/
       '''
     }
   }
+  
   
   stages {
     stage("Build the jar") {
