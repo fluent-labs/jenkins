@@ -8,16 +8,6 @@ podTemplate(
     serviceAccount: 'jenkins-spark-job'
 ) {
     node(POD_LABEL) {
-        container('sbt') {
-            stage('Build Spark jar') {
-                git branch: 'main', url: 'https://github.com/fluent-labs/jobs.git'
-                sh '''
-                    sbt assembly
-                    pwd
-                    ls -la
-                '''
-            }
-        }
         container('kubernetes') {
             stage('Submit job to Spark') {
                 withKubeConfig([credentialsId: 'jenkins-operator-token', namespace: 'content']) {
