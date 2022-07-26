@@ -5,6 +5,7 @@ metadata:
 spec:
   imagePullSecrets:
   - 'dockerhub'
+  serviceAccountName: jenkins-spark-job
   containers:
   - name: kubernetes
     image: alpine/k8s:1.21.13
