@@ -8,7 +8,6 @@ spec:
   containers:
   - name: s3
     image: lkjaero/jenkins-runners:s3
-    imagePullPolicy: Always
     command:
     - sleep
     args:

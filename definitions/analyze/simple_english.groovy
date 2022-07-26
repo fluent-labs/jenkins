@@ -1,5 +1,6 @@
 def dictionary = 'simplewiktionary'
 def mainClassName = 'SimpleWiktionarySectionFinder'
+def latest_downloaded_version = null
 
 pipeline {
   agent {
@@ -13,11 +14,18 @@ pipeline {
   stages {
     stage("Check download") {
       steps {
-        container('kubernetes') {
+        container('s3') {
           script {
             latest_downloaded_version = get_latest_processed_version(dictionary)
             echo "Latest processed $dictionary version: $latest_downloaded_version"
-
+          }
+        }
+      }
+    }
+    stage("Trigger job") {
+      steps {
+        container('kubernetes') {
+          script {
             withKubeConfig([credentialsId: 'jenkins-operator-token', namespace: 'content']) {
                 // image: gcr.io/spark-operator/spark:v3.1.1
                     sh """
