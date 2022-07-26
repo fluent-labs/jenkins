@@ -35,7 +35,7 @@ spec:
     mainApplicationFile: s3://definitions/jobs.jar
     sparkVersion: "3.3.0"
     arguments: 
-    - s3://definitions/
+    - s3a://definitions/
     - $latest_downloaded_version
     driver:
         javaOptions: "-Dlog4j.configurationFile=/mnt/config/log4j2.xml"
