@@ -33,7 +33,7 @@ for(String dictionary in dictionaries) {
                         branches('*/main')
                     }
                 }
-                scriptPath("pipelines/definitions/raw/${dictionary}.groovy")
+                scriptPath("jenkins/pipelines/definitions/raw/${dictionary}.groovy")
             }
         }
     }
