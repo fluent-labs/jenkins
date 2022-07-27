@@ -1,3 +1,2 @@
 folder('/build')
-folder('/definitions')
 folder('/test')

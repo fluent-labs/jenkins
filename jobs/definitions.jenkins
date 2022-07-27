@@ -3,6 +3,7 @@
 def dictionaries = ["cedict", "dawiktionary", "enwiktionary", "eswiktionary", "simplewiktionary", "zhwiktionary"];
 def jobsRepository = "https://github.com/fluent-labs/jenkins.git"
 
+folder('/definitions')
 folder('/definitions/raw')
 folder('/definitions/analyze')
 folder('/definitions/clean')
