@@ -40,9 +40,6 @@ for(String dictionary in dictionaries) {
         logRotator {
             daysToKeep(90)
         }
-        throttleConcurrentBuilds {
-            maxTotal(1)
-        }
         triggers {
             cron('H H(11-15) * * *')
         }
