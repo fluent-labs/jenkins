@@ -1,4 +1,4 @@
-def dictionary = 'enwiktionary'
+def dictionary = 'simplewiktionary'
 def latest_wiktionary_version = null
 def latest_downloaded_version = null
 
@@ -7,9 +7,6 @@ pipeline {
     kubernetes {
       yamlFile 'definitions/raw/raw_pod.yaml'
     }
-  }
-  triggers {
-    cron('H H(11-15) * * *')
   }
   stages {
     stage("Check download") {

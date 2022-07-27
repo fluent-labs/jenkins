@@ -1,4 +1,4 @@
-def dictionary = 'simplewiktionary'
+def dictionary = 'eswiktionary'
 def latest_wiktionary_version = null
 def latest_downloaded_version = null
 
@@ -8,9 +8,7 @@ pipeline {
       yamlFile 'definitions/raw/raw_pod.yaml'
     }
   }
-  triggers {
-    cron('H H(11-15) * * *')
-  }
+
   stages {
     stage("Check download") {
       steps {

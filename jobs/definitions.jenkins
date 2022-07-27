@@ -1,0 +1,38 @@
+#!/usr/bin/env groovy
+
+def dictionaries = ["cedict", "dawiktionary", "enwiktionary", "eswiktionary", "simplewiktionary", "zhwiktionary"];
+def jobsRepository = "https://github.com/fluent-labs/jenkins.git"
+
+folder('definitions/raw')
+folder('definitions/analyze')
+folder('definitions/clean')
+
+for(String dictionary in dictionaries) { 
+    pipelineJob("definitions/raw/$dictionary") {
+        displayName("$dictionary raw ingest")
+        description("Automatically downloads new versions for the source $dictionary")
+
+        logRotator {
+            daysToKeep(90)
+        }
+        maxTotal(1)
+        triggers {
+            cron('H H(11-15) * * *')
+        }
+
+        definition {
+            cpsScm {
+                scm {
+                    git {
+                        remote {
+                            url(jobsRepository)
+                            credentials('jenkins-operator')
+                        }
+                        branches('*/main')
+                    }
+                }
+                scriptPath("pipelines/definitions/raw/${dictionary}.groovy")
+            }
+        }
+    }
+} 
