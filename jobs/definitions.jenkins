@@ -62,7 +62,7 @@ pipelineJob("definitions/analyze/simple_english") {
                     branches('*/main')
                 }
             }
-            scriptPath("definitions/raw/simple_english.groovy")
+            scriptPath("definitions/analyze/simple_english.groovy")
         }
     }
 }
