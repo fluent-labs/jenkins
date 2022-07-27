@@ -16,7 +16,7 @@ folder('/definitions') {
                             scm {
                                 git {
                                     remote {
-                                        url(jobsRepository)
+                                        url("https://github.com/fluent-labs/jenkins.git")
                                         credentials('jenkins-operator')
                                     }
                                 }
