@@ -38,8 +38,14 @@ for(String dictionary in dictionaries) {
         logRotator {
             daysToKeep(90)
         }
-        triggers {
-            cron('H H(11-15) * * *')
+        properties {
+            pipelineTriggers {
+                triggers {
+                    cron {
+                        spec('H H(11-15) * * *')
+                    }
+                }
+            }
         }
 
         definition {
@@ -66,9 +72,6 @@ pipelineJob("definitions/analyze/simple_english") {
 
     logRotator {
         daysToKeep(90)
-    }
-    throttleConcurrentBuilds {
-        maxTotal(1)
     }
 
     definition {
