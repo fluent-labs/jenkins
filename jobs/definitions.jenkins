@@ -12,14 +12,11 @@ folder('/definitions') {
                     name("fluentlabs")
                     implicit(true)
                     retriever {
-                        scmSourceRetriever {
+                        modernSCM {
                             scm {
                                 git {
-                                    remote {
-                                        url(jobsRepository)
-                                        credentials('jenkins-operator')
-                                    }
-                                    branches('*/main')
+                                    url(jobsRepository)
+                                    credentials('jenkins-operator')
                                 }
                             }
                         }
