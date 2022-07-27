@@ -5,30 +5,29 @@ def dictionariesFriendly = ["ChineseWiktionary", "DanishWiktionary", "EnglishWik
 def jobsRepository = "https://github.com/fluent-labs/jenkins.git"
 
 folder('/definitions') {
-    properties { 
-        folderLibraries { 
+    properties {
+        folderLibraries {
             libraries {
                 libraryConfiguration {
                     name("fluentlabs")
+                    defaultVersion('/main')
                     implicit(true)
                     retriever {
                         modernSCM {
                             scm {
                                 git {
-                                    remote {
-                                        url("https://github.com/fluent-labs/jenkins.git")
-                                        credentials('jenkins-operator')
-                                    }
+                                    remote ("https://github.com/fluent-labs/jenkins.git")
                                 }
                             }
                         }
                     }
-                    defaultVersion('/main')
+                    
                 }
             }
         }
     }
 }
+
 folder('/definitions/raw')
 
 for(String dictionary in dictionaries) { 
