@@ -3,9 +3,9 @@
 def dictionaries = ["cedict", "dawiktionary", "enwiktionary", "eswiktionary", "simplewiktionary", "zhwiktionary"];
 def jobsRepository = "https://github.com/fluent-labs/jenkins.git"
 
-folder('definitions/raw')
-folder('definitions/analyze')
-folder('definitions/clean')
+folder('/definitions/raw')
+folder('/definitions/analyze')
+folder('/definitions/clean')
 
 for(String dictionary in dictionaries) { 
     pipelineJob("definitions/raw/$dictionary") {
@@ -33,7 +33,7 @@ for(String dictionary in dictionaries) {
                         branches('*/main')
                     }
                 }
-                scriptPath("jenkins/pipelines/definitions/raw/${dictionary}.groovy")
+                scriptPath("definitions/raw/${dictionary}.groovy")
             }
         }
     }
