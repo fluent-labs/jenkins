@@ -4,7 +4,32 @@ def dictionaries = ["cedict", "dawiktionary", "enwiktionary", "eswiktionary", "s
 def dictionariesFriendly = ["ChineseWiktionary", "DanishWiktionary", "EnglishWiktionary", "SimpleWiktionary", "SpanishWiktionary"];
 def jobsRepository = "https://github.com/fluent-labs/jenkins.git"
 
-folder('/definitions')
+folder('/definitions') {
+    properties { 
+        folderLibraries { 
+            libraries {
+                libraryConfiguration {
+                    name("fluentlabs")
+                    implicit(true)
+                    retriever {
+                        scmSourceRetriever {
+                            scm {
+                                git {
+                                    remote {
+                                        url(jobsRepository)
+                                        credentials('jenkins-operator')
+                                    }
+                                    branches('*/main')
+                                }
+                            }
+                        }
+                    }
+                    defaultVersion('/main')
+                }
+            }
+        }
+    }
+}
 folder('/definitions/raw')
 
 for(String dictionary in dictionaries) { 
