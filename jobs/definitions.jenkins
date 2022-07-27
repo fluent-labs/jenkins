@@ -1,12 +1,11 @@
 #!/usr/bin/env groovy
 
 def dictionaries = ["cedict", "dawiktionary", "enwiktionary", "eswiktionary", "simplewiktionary", "zhwiktionary"];
+def dictionariesFriendly = ["ChineseWiktionary", "DanishWiktionary", "EnglishWiktionary", "SimpleWiktionary", "SpanishWiktionary"];
 def jobsRepository = "https://github.com/fluent-labs/jenkins.git"
 
 folder('/definitions')
 folder('/definitions/raw')
-folder('/definitions/analyze')
-folder('/definitions/clean')
 
 for(String dictionary in dictionaries) { 
     pipelineJob("definitions/raw/$dictionary") {
@@ -39,3 +38,33 @@ for(String dictionary in dictionaries) {
         }
     }
 } 
+
+folder('/definitions/analyze')
+pipelineJob("definitions/analyze/simple_english") {
+    displayName("Simple english raw ingest")
+    description("Analyzes headings for simple english wiktionary")
+
+    logRotator {
+        daysToKeep(90)
+    }
+    throttleConcurrentBuilds {
+        maxTotal(1)
+    }
+
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        url(jobsRepository)
+                        credentials('jenkins-operator')
+                    }
+                    branches('*/main')
+                }
+            }
+            scriptPath("definitions/raw/simple_english.groovy")
+        }
+    }
+}
+
+folder('/definitions/clean')
