@@ -1,0 +1,40 @@
+#!/usr/bin/env groovy
+
+def dictionaries = ["cedict", "dawiktionary", "enwiktionary", "eswiktionary", "simplewiktionary", "zhwiktionary"];
+def jobsRepository = "https://github.com/fluent-labs/jenkins.git"
+
+folder('definitions/raw')
+folder('definitions/analyze')
+folder('definitions/clean')
+
+for(String dictionary in dictionaries) { 
+    pipelineJob("definitions/raw/$dictionary") {
+        displayName("$dictionary raw ingest")
+
+        logRotator {
+            numToKeep(10)
+            daysToKeep(30)
+        }
+
+        configure { project ->
+            project / 'properties' / 'org.jenkinsci.plugins.workflow.job.properties.DurabilityHintJobProperty' {
+                hint('PERFORMANCE_OPTIMIZED')
+            }
+        }
+
+        definition {
+            cpsScm {
+                scm {
+                    git {
+                        remote {
+                            url(jobsRepository)
+                            credentials('jenkins-operator')
+                        }
+                        branches('*/main')
+                    }
+                }
+                scriptPath("pipelines/definitions/raw/${dictionary}.groovy")
+            }
+        }
+    }
+} 
