@@ -5,7 +5,7 @@ def latest_downloaded_version = null
 pipeline {
   agent {
     kubernetes {
-      yamlFile 'definitions/analyze/analyze_pod.yaml'
+      yamlFile 'pipelines/definitions/analyze/analyze_pod.yaml'
     }
   }
 //   triggers {

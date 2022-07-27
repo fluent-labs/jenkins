@@ -5,7 +5,7 @@ def latest_downloaded_version = null
 pipeline {
   agent {
     kubernetes {
-      yamlFile 'definitions/raw/raw_pod.yaml'
+      yamlFile 'pipelines/definitions/raw/raw_pod.yaml'
     }
   }
   stages {
