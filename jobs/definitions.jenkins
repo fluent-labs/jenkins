@@ -10,7 +10,7 @@ folder('/definitions') {
             libraries {
                 libraryConfiguration {
                     name("fluentlabs")
-                    defaultVersion('/main')
+                    defaultVersion('main')
                     implicit(true)
                     retriever {
                         modernSCM {
