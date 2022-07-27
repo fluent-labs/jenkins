@@ -33,7 +33,7 @@ for(String dictionary in dictionaries) {
                         branches('*/main')
                     }
                 }
-                scriptPath("definitions/raw/${dictionary}.groovy")
+                scriptPath("pipelines/definitions/raw/${dictionary}.groovy")
             }
         }
     }
@@ -62,7 +62,7 @@ pipelineJob("definitions/analyze/simple_english") {
                     branches('*/main')
                 }
             }
-            scriptPath("definitions/analyze/simple_english.groovy")
+            scriptPath("pipelines/definitions/analyze/simple_english.groovy")
         }
     }
 }
