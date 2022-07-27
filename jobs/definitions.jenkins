@@ -10,16 +10,14 @@ folder('definitions/clean')
 for(String dictionary in dictionaries) { 
     pipelineJob("definitions/raw/$dictionary") {
         displayName("$dictionary raw ingest")
+        description("Automatically downloads new versions for the source $dictionary")
 
         logRotator {
-            numToKeep(10)
-            daysToKeep(30)
+            daysToKeep(90)
         }
-
-        configure { project ->
-            project / 'properties' / 'org.jenkinsci.plugins.workflow.job.properties.DurabilityHintJobProperty' {
-                hint('PERFORMANCE_OPTIMIZED')
-            }
+        maxTotal(1)
+        triggers {
+            cron('H H(11-15) * * *')
         }
 
         definition {

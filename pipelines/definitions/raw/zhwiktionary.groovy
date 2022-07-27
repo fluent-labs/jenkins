@@ -8,9 +8,6 @@ pipeline {
       yamlFile 'definitions/raw/raw_pod.yaml'
     }
   }
-  triggers {
-    cron('H H(11-15) * * *')
-  }
   stages {
     stage("Check download") {
       steps {
