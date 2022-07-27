@@ -15,8 +15,10 @@ folder('/definitions') {
                         modernSCM {
                             scm {
                                 git {
-                                    url(jobsRepository)
-                                    credentials('jenkins-operator')
+                                    remote {
+                                        url(jobsRepository)
+                                        credentials('jenkins-operator')
+                                    }
                                 }
                             }
                         }
