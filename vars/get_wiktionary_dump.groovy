@@ -1,11 +1,9 @@
-import groovy.json.JsonSlurper
-
 def get_hash_for_version(dictionary, version) {
   sh "wget https://dumps.wikimedia.org/$dictionary/$version/dumpstatus.json"
   def json = sh script: "cat dumpstatus.json", returnStdout: true
 
-  def parsed = new JsonSlurper().parseText(json)
-  return parsed.jobs.metacurrentdump.files.get("$dictionary-$version-pages-meta-current.xml.bz2").sha1.toString().trim()
+  def hash = sh script "echo $json | jq '.jobs.metacurrentdump.files.$dictionary-$version-pages-meta-current.xml.bz2.sha1'", returnStdout: true
+  return hash.trim()
 }
 
 def call(String dictionary, String version) {

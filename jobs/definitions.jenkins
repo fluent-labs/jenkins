@@ -32,7 +32,6 @@ folder('/definitions/raw')
 
 for(String dictionary in dictionaries) { 
     pipelineJob("definitions/raw/$dictionary") {
-        displayName("$dictionary raw ingest")
         description("Automatically downloads new versions for the source $dictionary")
 
         logRotator {
