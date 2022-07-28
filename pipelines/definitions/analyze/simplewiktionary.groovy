@@ -23,7 +23,7 @@ pipeline {
       steps {
         container('kubernetes') {
           script {
-            withKubeConfig([credentialsId: 'jenkins-spark-job', namespace: 'content']) {
+            withKubeConfig([namespace: 'content']) {
                 // image: gcr.io/spark-operator/spark:v3.1.1
                     sh """
 cat <<EOF | kubectl apply -f -
