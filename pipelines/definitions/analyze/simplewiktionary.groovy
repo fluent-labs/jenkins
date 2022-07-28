@@ -41,7 +41,7 @@ spec:
     sparkVersion: "3.3.0"
     arguments: 
     - s3a://definitions/
-    - $latest_downloaded_version
+    - "$latest_downloaded_version"
     driver:
         javaOptions: "-Dlog4j.configurationFile=/mnt/config/log4j2.xml"
         cores: 1
