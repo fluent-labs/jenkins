@@ -24,7 +24,6 @@ pipeline {
         container('kubernetes') {
           script {
             withKubeConfig([credentialsId: 'jenkins-operator-token', namespace: 'content']) {
-                // image: gcr.io/spark-operator/spark:v3.1.1
                     sh """
 cat <<EOF | kubectl apply -f -
 apiVersion: sparkoperator.k8s.io/v1beta2
@@ -35,7 +34,7 @@ metadata:
 spec:
     type: Scala
     mode: cluster
-    
+    image: gcr.io/spark-operator/spark:v3.1.1
     mainClass: io.fluentlabs.jobs.definitions.analyze.wiktionary.section.$mainClassName
     mainApplicationFile: s3://definitions/jobs.jar
     sparkVersion: "3.3.0"
