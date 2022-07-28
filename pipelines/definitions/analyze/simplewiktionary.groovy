@@ -35,6 +35,8 @@ spec:
     type: Scala
     mode: cluster
     image: lkjaero/spark-runner:3.2.2
+    imagePullSecrets:
+    - dockerhub
     mainClass: io.fluentlabs.jobs.definitions.analyze.wiktionary.section.$mainClassName
     mainApplicationFile: s3a://definitions/jobs.jar
     sparkVersion: "3.2.2"
