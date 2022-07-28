@@ -36,7 +36,7 @@ spec:
     mode: cluster
     image: gcr.io/spark-operator/spark:v3.1.1
     mainClass: io.fluentlabs.jobs.definitions.analyze.wiktionary.section.$mainClassName
-    mainApplicationFile: s3://definitions/jobs.jar
+    mainApplicationFile: s3a://definitions/jobs.jar
     sparkVersion: "3.3.0"
     arguments: 
     - s3a://definitions/
