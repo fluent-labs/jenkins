@@ -8,9 +8,6 @@ pipeline {
       yamlFile 'pipelines/definitions/analyze/analyze_pod.yaml'
     }
   }
-//   triggers {
-//     cron('H H(11-15) * * *')
-//   }
   stages {
     stage("Check download") {
       steps {
