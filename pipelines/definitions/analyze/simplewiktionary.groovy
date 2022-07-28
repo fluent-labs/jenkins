@@ -34,7 +34,7 @@ metadata:
 spec:
     type: Scala
     mode: cluster
-    image: apache/spark:v3.2.2
+    image: lkjaero/spark-runner:3.2.2
     mainClass: io.fluentlabs.jobs.definitions.analyze.wiktionary.section.$mainClassName
     mainApplicationFile: s3a://definitions/jobs.jar
     sparkVersion: "3.3.0"
