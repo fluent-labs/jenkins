@@ -37,7 +37,7 @@ spec:
     image: lkjaero/spark-runner:3.2.2
     mainClass: io.fluentlabs.jobs.definitions.analyze.wiktionary.section.$mainClassName
     mainApplicationFile: s3a://definitions/jobs.jar
-    sparkVersion: "3.3.0"
+    sparkVersion: "3.2.2"
     arguments: 
     - s3a://definitions/
     - "$latest_downloaded_version"
@@ -47,7 +47,7 @@ spec:
         coreLimit: "1200m"
         memory: "512m"
         labels:
-            version: 3.3.0
+            version: 3.2.2
         serviceAccount: spark-spark
         env:
         - name: AWS_ACCESS_KEY_ID
@@ -66,7 +66,7 @@ spec:
         instances: 1
         memory: "512m"
         labels:
-            version: 3.3.0
+            version: 3.2.2
         serviceAccount: spark-spark
         env:
         - name: AWS_ACCESS_KEY_ID
