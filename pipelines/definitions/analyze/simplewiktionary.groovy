@@ -38,7 +38,7 @@ spec:
     imagePullSecrets:
     - "dockerhub"
     mainClass: io.fluentlabs.jobs.definitions.analyze.wiktionary.section.$mainClassName
-    mainApplicationFile: s3a://definitions/jobs.jar
+    mainApplicationFile: local:///opt/fluentlabs/jobs.jar
     sparkVersion: "3.2.2"
     arguments: 
     - s3a://definitions/
